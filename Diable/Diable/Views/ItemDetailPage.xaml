@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:Diable;assembly=Diable"
+             mc:Ignorable="d"
+             x:Class="Diable.Views.ItemDetailPage"
+             Title="{Binding Title}">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem IconImageSource="{local:ImageResource Diable.Resources.cogs.png}" Clicked="SetupItem_Clicked" />
+    </ContentPage.ToolbarItems>
+    <ScrollView>
+        <StackLayout Spacing="20" Padding="15">
+            <!-- <Label Text="Name:" FontSize="Medium" />
+            <Label Text="{Binding Item.Text}" d:Text="Item name" FontSize="Small"/> -->
+            <!-- <Label Text="Description:" FontSize="Medium" /> -->
+            <Label Text="{Binding Item.Description}" d:Text="Item description"/>
+<!--            <StackLayout Orientation="Horizontal">
+                <Label Text="Folded"/>
+                <Switch x:Name="FoldedSwitch" Toggled="FoldedSwitch_Toggled" IsToggled="True"/>
+                <Label Text="Pin0:"/>
+                <Entry Text="5" x:Name="Pin0"/>
+                <Label Text="Pin1:"/>
+                <Entry Text="6" x:Name="Pin1"/>
+            </StackLayout> -->
+            <StackLayout Orientation="Horizontal">
+                <Label Text="Circle Out"/>
+                <StackLayout Orientation="Vertical">
+                    <StackLayout Orientation="Horizontal">
+                        <Button Text="R" BackgroundColor="Red" x:Name="RedCircleButton" Clicked="CircleButton_Clicked"/>
+                        <Button Text="G" BackgroundColor="Green" x:Name="GreenCircleButton" Clicked="CircleButton_Clicked"/>
+                        <Button Text="B" BackgroundColor="Blue" x:Name="BlueCircleButton" Clicked="CircleButton_Clicked"/>
+                    </StackLayout>
+                    <StackLayout Orientation="Horizontal">
+                        <Button Text="Y" BackgroundColor="Yellow" x:Name="YellowCircleButton" Clicked="CircleButton_Clicked"/>
+                        <Button Text="C" BackgroundColor="Cyan" x:Name="CyanCircleButton" Clicked="CircleButton_Clicked"/>
+                        <Button Text="M" BackgroundColor="Magenta" x:Name="MagentaCircleButton" Clicked="CircleButton_Clicked"/>
+                    </StackLayout>
+                </StackLayout>
+                <Button Text="W" BackgroundColor="White" x:Name="WhiteCircleButton" Clicked="CircleButton_Clicked"/>
+            </StackLayout>
+            <StackLayout Orientation="Horizontal">
+                <Label Text="Boom!"/>
+                <StackLayout Orientation="Vertical">
+                    <StackLayout Orientation="Horizontal">
+                        <Button Text="R" BackgroundColor="Red" x:Name="RedBoomButton" Clicked="BoomButton_Clicked"/>
+                        <Button Text="G" BackgroundColor="Green" x:Name="GreenBoomButton" Clicked="BoomButton_Clicked"/>
+                        <Button Text="B" BackgroundColor="Blue" x:Name="BlueBoomButton" Clicked="BoomButton_Clicked"/>
+                    </StackLayout>
+                    <StackLayout Orientation="Horizontal">
+                        <Button Text="Y" BackgroundColor="Yellow" x:Name="YellowBoomButton" Clicked="BoomButton_Clicked"/>
+                        <Button Text="C" BackgroundColor="Cyan" x:Name="CyanBoomButton" Clicked="BoomButton_Clicked"/>
+                        <Button Text="M" BackgroundColor="Magenta" x:Name="MagentaBoomButton" Clicked="BoomButton_Clicked"/>
+                    </StackLayout>
+                </StackLayout>
+                <Button Text="W" BackgroundColor="White" x:Name="WhiteBoomButton" Clicked="BoomButton_Clicked"/>
+            </StackLayout>
+            <StackLayout Orientation="Horizontal">
+                <Label Text="Brightness/Jitter"/>
+                <Slider x:Name="Brightness" Minimum="0" Maximum="255" Value="30" DragCompleted="Brightness_DragCompleted" ValueChanged="Brightness_ValueChanged" HorizontalOptions="FillAndExpand"/>
+            </StackLayout>
+            <Button Text="Poke!" x:Name="PokeButton" Clicked="PokeButton_Clicked"/>
+            <Button Text="Test" x:Name="TestButton" IsVisible="false" Clicked="TestButton_Clicked" />
+            <ScrollView Orientation="Horizontal">
+                <StackLayout Orientation="Horizontal" x:Name="ImageButtonStack">
+                    <!-- <ImageButton Source="" WidthRequest="100" x:Name="" Clicked="" /> -->
+                </StackLayout>
+            </ScrollView>
+        </StackLayout>
+    </ScrollView>
+
+</ContentPage>

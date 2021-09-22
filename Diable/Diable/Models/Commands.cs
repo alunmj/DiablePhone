@@ -1,0 +1,119 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text;
+
+namespace Diable.Models
+{
+    class Commands
+    {
+        protected MemoryStream ms;
+        protected char commandtype;
+        protected Commands(char _type)
+        {
+            commandtype = _type;
+            ms = new MemoryStream();
+        }
+        static Commands Command(char _type) {
+            switch (_type)
+            {
+                case 'F': // Frame type
+                    return new FrameCommands();
+                case 'B': // Brightness
+                    return new BrightnessCommands();
+            }
+            return null;
+        }
+        protected virtual void PreSend() { ms.Seek(0, SeekOrigin.Begin);  ms.WriteByte((byte)commandtype); }
+
+        public MemoryStream GetStream() {
+            PreSend();
+            ms.Seek(0, SeekOrigin.Begin);
+            return ms;
+        }
+        public static implicit operator MemoryStream(Commands cs) { return cs.GetStream(); }
+    }
+
+    class FrameCommands : Commands
+    {
+        public class Frames {
+            public long microsFrame=0;
+            public byte[][] frame = new byte[16][] { 
+                new byte[3], new byte[3], new byte[3], new byte[3],
+                new byte[3], new byte[3], new byte[3], new byte[3],
+                new byte[3], new byte[3], new byte[3], new byte[3],
+                new byte[3], new byte[3], new byte[3], new byte[3],
+             };
+            public Frames() { }
+            public Frames(long _micros) { microsFrame = _micros; }
+            public Frames(long _micros, byte[][] _frame)
+            {
+                microsFrame = _micros;
+                frame = _frame;
+            }
+        }
+        int frameCount = 0;
+        readonly List<Frames> frames = new List<Frames>();
+        public FrameCommands() :base('F') { }
+        public void AddFrame(Frames _frame)
+        {
+            Debug.Assert(_frame.frame.Length == 16);
+            frameCount++;
+            frames.Add(_frame);
+        }
+        public void AddFrame(long _microsFrame, byte[][] _frame)
+        {
+            AddFrame(new Frames(_microsFrame, _frame)); 
+        }
+        protected override void PreSend()
+        {
+            base.PreSend();
+            Debug.Assert(frameCount > 0 && frameCount < 32768);
+            Debug.Assert(frameCount == frames.Count);
+            byte[] bframeCount = BitConverter.GetBytes((short)frameCount).Reverse().ToArray();
+            ms.Write(bframeCount, 0, 2);
+            foreach (var x in frames)
+            {
+                byte[] microsFrame = BitConverter.GetBytes((int)x.microsFrame).Reverse().ToArray();
+
+                ms.Write(microsFrame,0,4);
+                foreach (var y in x.frame)
+                {
+                    ms.Write(y, 0, y.Length);
+                }
+            }
+        }
+    }
+    class BrightnessCommands : Commands
+    {
+        byte brightness = 255;
+        public BrightnessCommands() : base('B') { }
+        public BrightnessCommands(int _brightness) : base('B')
+        {
+            commandtype = 'B';
+            Set(_brightness);
+        }
+        public void Set(int _brightness)
+        {
+            brightness = (byte)_brightness;
+        }
+        protected override void PreSend()
+        {
+            base.PreSend();
+            ms.WriteByte(brightness);
+        }
+    }
+    class ColorCommands : Commands
+    {
+        byte[] color = new byte[] { 0, 0, 0 };
+        public ColorCommands() : base('C') { }
+        public ColorCommands(byte[] _color) : base('C') { color = _color; }
+        protected override void PreSend()
+        {
+            base.PreSend();
+            ms.Write(color, 0, 3);
+        }
+    }
+}

@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Diable.Views.SettingsPage">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Save" Clicked="Save_Clicked" />
+    </ContentPage.ToolbarItems>
+    <ContentPage.Content>
+        <StackLayout>
+            <Label Text="DiaBLE Settings"
+                HorizontalOptions="CenterAndExpand" />
+            <!-- Name, fold/wing, pins -->
+            <Label Text="DiaBLE Name:" />
+            <Entry x:Name="_DiaBLEName" />
+            <StackLayout Orientation="Horizontal">
+                <Label Text="DiaBLE version:" />
+                <Label x:Name="_DiaBLEVersion"/>
+            </StackLayout>
+            <StackLayout Orientation="Horizontal">
+                <Label Text="Folded"/>
+                <Switch x:Name="_FoldedSwitch" IsToggled="True"/>
+                <Label Text="Pin0:"/>
+                <Entry Text="5" x:Name="_Pin0"/>
+                <Label Text="Pin1:"/>
+                <Entry Text="6" x:Name="_Pin1"/>
+            </StackLayout>
+        </StackLayout>
+    </ContentPage.Content>
+</ContentPage>
