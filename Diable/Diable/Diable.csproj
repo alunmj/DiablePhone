@@ -20,6 +20,13 @@
     <None Remove="Media\Nyancat.jpg" />
     <None Remove="Media\Pooper.png" />
     <None Remove="Media\raphael.jpeg" />
+    <None Remove="Media\xm bells.png" />
+    <None Remove="Media\xm gift.png" />
+    <None Remove="Media\xm light.png" />
+    <None Remove="Media\xm snowflake.png" />
+    <None Remove="Media\xm snowman.png" />
+    <None Remove="Media\xm tree.png" />
+    <None Remove="Media\xmcanes.png" />
     <None Remove="Resources\cogs.png" />
   </ItemGroup>
 
@@ -29,18 +36,24 @@
     <EmbeddedResource Include="Media\bucks.png" />
     <EmbeddedResource Include="Media\eightball.png" />
     <EmbeddedResource Include="Media\Flaming-Skull-10.png" />
-    <EmbeddedResource Include="Media\lolface.jpg" />
+    <EmbeddedResource Include="Media\lolface.png" />
     <EmbeddedResource Include="Media\Nyancat.jpg" />
     <EmbeddedResource Include="Media\Pooper.png" />
-    <EmbeddedResource Include="Media\raphael.jpeg" />
+    <EmbeddedResource Include="Media\raphael.png" />
+    <EmbeddedResource Include="Media\xm bells.png" />
+    <EmbeddedResource Include="Media\xm gift.png" />
+    <EmbeddedResource Include="Media\xm light.png" />
+    <EmbeddedResource Include="Media\xm snowflake.png" />
+    <EmbeddedResource Include="Media\xm tree.png" />
+    <EmbeddedResource Include="Media\xmcanes.png" />
     <EmbeddedResource Include="Resources\cogs.png" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ble.net" Version="1.2.1" />
-    <PackageReference Include="SkiaSharp" Version="2.80.2" />
-    <PackageReference Include="Xamarin.Forms" Version="4.5.0.495" />  
-    <PackageReference Include="Xamarin.Essentials" Version="1.3.1" />
+    <PackageReference Include="SkiaSharp" Version="2.88.0" />
+    <PackageReference Include="Xamarin.Forms" Version="5.0.0.2478" />  
+    <PackageReference Include="Xamarin.Essentials" Version="1.7.3" />
   </ItemGroup>
 
   <ItemGroup>

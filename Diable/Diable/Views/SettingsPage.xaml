@@ -17,12 +17,21 @@
                 <Label x:Name="_DiaBLEVersion"/>
             </StackLayout>
             <StackLayout Orientation="Horizontal">
-                <Label Text="Folded"/>
+                <Label Text="Wings"/>
                 <Switch x:Name="_FoldedSwitch" IsToggled="True"/>
+                <Label Text="Folded"/>
                 <Label Text="Pin0:"/>
                 <Entry Text="5" x:Name="_Pin0"/>
                 <Label Text="Pin1:"/>
                 <Entry Text="6" x:Name="_Pin1"/>
+            </StackLayout>
+            <StackLayout Orientation="Horizontal">
+                <Label Text="Number of LEDs per stick"/>
+                <Entry Text="8" x:Name="_LightCount" WidthRequest="100"/>
+            </StackLayout>
+            <StackLayout>
+                <Label Text="Main Loop ms (500 seems to work):" />
+                <Entry Text="500" x:Name="_FrameTime" />
             </StackLayout>
         </StackLayout>
     </ContentPage.Content>

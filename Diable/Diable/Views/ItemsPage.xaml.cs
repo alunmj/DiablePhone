@@ -35,7 +35,7 @@ namespace Diable.Views
 
         async void OnItemSelected(object sender, EventArgs args)
         {
-            // TODO - we clicked on a device. Connect to it. Subpage: Make sure it has the services we need, connect to the serial TX/RX service
+            // We clicked on a device. Connect to it. Subpage: Make sure it has the services we need, connect to the serial TX/RX service
             var layout = (BindableObject)sender;
             var item = (Item)layout.BindingContext;
             await Navigation.PushAsync(new ItemDetailPage(new ItemDetailViewModel(item), peripheralMap[item.Id]));
@@ -80,13 +80,16 @@ namespace Diable.Views
                          Debug.WriteLine(adv.ManufacturerSpecificData.FirstOrDefault().CompanyName());
                          Debug.WriteLine(adv.ServiceData);
                          string textId = BitConverter.ToString(peripheral.Address);
-                         viewModel.Items.Add(new Item()
+                         if (!peripheralMap.ContainsKey(textId))
                          {
-                             Description = adv.DeviceName,
-                             Text = peripheral.DeviceId.ToString(),
-                             Id = textId
-                         });
-                         peripheralMap[textId] = peripheral;
+                             viewModel.Items.Add(new Item()
+                             {
+                                 Description = adv.DeviceName,
+                                 Text = peripheral.DeviceId.ToString(),
+                                 Id = textId
+                             });
+                             peripheralMap[textId] = peripheral;
+                         }
                          cts.Cancel(); // Found what we needed? Really?
                      },
                      cts.Token);

@@ -10,6 +10,7 @@ using nexus.protocols.ble;
 using Android.Bluetooth;
 using Android.Support.V4.App;
 using Android;
+using AndroidX.Core.App;
 
 namespace Diable.Droid
 {

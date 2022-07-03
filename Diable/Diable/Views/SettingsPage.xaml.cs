@@ -16,8 +16,10 @@ namespace Diable.Views
         public bool FoldedSwitch { get => _FoldedSwitch.IsToggled; set => _FoldedSwitch.IsToggled = value; }
         public string Pin0 { get => _Pin0.Text; set => _Pin0.Text = value; }
         public string Pin1 { get => _Pin1.Text; set => _Pin1.Text = value; }
+        public string LightCount { get => _LightCount.Text; set => _LightCount.Text = value; }
         public string DiaBLEName { get => _DiaBLEName.Text; set => _DiaBLEName.Text = value; }
         public string DiaBLEVersion { get => _DiaBLEVersion.Text; set => _DiaBLEVersion.Text = value; }
+        public string FrameTime { get => _FrameTime.Text; set => _FrameTime.Text = value; }
         public SettingsPage()
         {
             InitializeComponent();

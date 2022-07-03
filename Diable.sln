@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Diable.Android", "Diable\Di
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Diable.iOS", "Diable\Diable.iOS\Diable.iOS.csproj", "{484CB710-C759-452A-9DD8-901CC3ABE3DF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Diable", "Diable\Diable\Diable.csproj", "{3DFB8712-972A-4880-816E-DEEFE490DA56}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Diable", "Diable\Diable\Diable.csproj", "{3DFB8712-972A-4880-816E-DEEFE490DA56}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

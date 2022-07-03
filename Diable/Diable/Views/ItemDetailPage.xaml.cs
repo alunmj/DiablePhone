@@ -16,6 +16,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection;
 using SkiaSharp;
+using System.Text.RegularExpressions;
 
 namespace Diable.Views
 {
@@ -29,8 +30,18 @@ namespace Diable.Views
         private BlePeripheralConnectionRequest connection;
         private IBleGattServerConnection gattServer;
         private readonly IBluetoothLowEnergyAdapter ble;
-        private int brightness = 30;
+        private int brightness = 100;
         private SettingsPage settingsPage = null;
+
+        // Settings related to the DiaBLE unit we're currently looking at - these could become a class, I dunno.
+        private string _DiaBLEName;
+        private string _DiaBLEVersion;
+        private byte _DiaBLEPin0; // Which pin corresponds to stick 0
+        private byte _DiaBLEPin1; // Which pin corresponds to stick 1
+        private char _DiaBLEFold; // W or F.
+        private byte _DiaBLELightCount = 8; // Number of lights per stick
+        // TODO: Save the frame time somewhere, so personal preferences are kept.
+        private long _DiaBLEFrameTime = 500; // 500 seems good, but we should be able to play with it!
 
         public ItemDetailPage(ItemDetailViewModel viewModel, IBlePeripheral peripheral)
         {
@@ -40,6 +51,15 @@ namespace Diable.Views
             // Text is Device ID, Id is address.
             ble = ((App)(App.Current)).myble;
             myper = peripheral;
+
+            if (myper != null && myper.Advertisement != null)
+            {
+                _DiaBLEName = myper.Advertisement.DeviceName;
+            }
+            else
+            {
+                _DiaBLEName = "Fake test device";
+            }
         }
         private Guid kUartSvcId = new Guid("6e400001-b5a3-f393-e0a9-e50e24dcca9e");
         private Guid kUartTxCharId = new Guid("6e400002-b5a3-f393-e0a9-e50e24dcca9e");
@@ -60,7 +80,7 @@ namespace Diable.Views
         protected async override void OnAppearing()
         {
             base.OnAppearing();
-            // Connect to Bluetooth if we can...
+            // Connect to Bluetooth if we can, and need to...
             if (myper != null && (gattServer == null))
             {
                 connection = await ble.ConnectToDevice(myper, new TimeSpan(0, 0, 30));
@@ -99,14 +119,32 @@ namespace Diable.Views
                 // We got here returning from a settings page, so if the "save" value is set in that, we need to save the data.
                 if (settingsPage.IsSave())
                 {
-                    // Get name, pin layout & fold state, send to DiaBLE unit.
+                    // Get name, pin layout & fold state, send to DiaBLE unit with 'L' command.
                     byte[] command = new byte[] { (byte)'L', 5, 6, (byte)'F' };
                     Byte.TryParse(settingsPage.Pin0, out command[1]);
+                    _DiaBLEPin0 = command[1];
                     Byte.TryParse(settingsPage.Pin1, out command[2]);
-                    command[3] = (byte)(settingsPage.FoldedSwitch ? 'F' : 'W');
+                    _DiaBLEPin1 = command[2];
+                    _DiaBLEFold = (settingsPage.FoldedSwitch ? 'F' : 'W');
+                    command[3] = (byte)_DiaBLEFold;
                     await SendBLECmd(command);
-                    // TODO: Send name using T command?
+
+                    // Set the LED count using the 'S' command.
+                    byte[] stickcommand = new byte[] { (byte)'S', 8, 2, 1, 0, 0 };
+                    Byte.TryParse(settingsPage.LightCount, out stickcommand[1]);
+                    _DiaBLELightCount = stickcommand[1];
+                    FrameCommands.SetLightCount(_DiaBLELightCount);
+                    await SendBLECmd(stickcommand);
+
+                    // Send name using T command?
+                    if (_DiaBLEName != settingsPage.DiaBLEName)
+                    {
+                        await SendBLECmd($"T{settingsPage.DiaBLEName}");
+                        _DiaBLEName = settingsPage.DiaBLEName;
+                    }
+                    long.TryParse(settingsPage.FrameTime, out _DiaBLEFrameTime);
                 }
+                settingsPage = null;
             }
         }
 
@@ -127,6 +165,7 @@ namespace Diable.Views
             // Therefore one half a revolution is 7500 micros
             FrameCommands f = new FrameCommands();
             // From inside out on each side, 1 LED at white, one LED off, 6 LEDs at colour.
+            // TODO: Allow for more than eight LEDs per stick!
             byte[][] blackline = { white_color, white_color, black_color, black_color, black_color, black_color, black_color, black_color,
                 black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color};
             byte[][] redline = { white_color, white_color, black_color, black_color, red_color, white_color, red_color, white_color,
@@ -146,12 +185,12 @@ namespace Diable.Views
             // 1/10th of a second for each circle, then 'a long time' for solid colour.
             long microsfillrow = 100000L;
             FrameCommands f = new FrameCommands();
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < _DiaBLELightCount * 2; i++)
             {
-                if (i == 15)
+                if (i == _DiaBLELightCount * 2 - 1)
                     microsfillrow = 100000000L;
-                FrameCommands.Frames frame = new FrameCommands.Frames(microsfillrow);
-                for (int j = 0; j < 16; j++)
+                FrameCommands.Frames frame = new FrameCommands.Frames(microsfillrow, _DiaBLELightCount * 2);
+                for (int j = 0; j < _DiaBLELightCount * 2; j++)
                 {
                     byte[] colors = new byte[3] { 0, 0, 0 };
                     if (j <= i)
@@ -231,11 +270,11 @@ namespace Diable.Views
         protected async override void OnDisappearing()
         {
             base.OnDisappearing();
-            if (gattServer != null)
+            if (gattServer != null && settingsPage == null) // Don't disconnect if we're going to settings page.
             {
                 await gattServer.Disconnect();
+                gattServer = null;
             }
-            gattServer = null;
         }
 
         private void Brightness_ValueChanged(object sender, ValueChangedEventArgs e)
@@ -260,12 +299,12 @@ namespace Diable.Views
 
             // Boom - sudden increase in light strength, then bright light for a half second, then black.
             FrameCommands.Frames frame;
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 8 /* Not DiaBLELightCount */; i++)
             {
                 if (i != 0)
                     microsfillrow = 50000L;
-                frame = new FrameCommands.Frames(microsfillrow);
-                for (int j = 0; j < 16; j++)
+                frame = new FrameCommands.Frames(microsfillrow, _DiaBLELightCount * 2);
+                for (int j = 0; j < _DiaBLELightCount * 2; j++)
                 {
                     for (int k = 0; k < 3; k++)
                     {
@@ -274,7 +313,7 @@ namespace Diable.Views
                 }
                 f.AddFrame(frame);
             }
-            f.AddFrame(new FrameCommands.Frames(microsfillrow * 100));
+            f.AddFrame(new FrameCommands.Frames(microsfillrow * 100, _DiaBLELightCount * 2));
             // Full brightness!
             await SendBLECmd(f);
         }
@@ -320,7 +359,7 @@ namespace Diable.Views
             // 15000 / 375 = 40 segments, so 9 degrees per segment, which seems likely good enough.
             // 15000 / 500 = 30 segments, which is 12 degrees per segment, which works.
             // We've tried 500, which is nice, but more segments is probably better.
-            long each_micros = 375L; // Number of microseconds for each segment - put this in a setting?
+            long each_micros = _DiaBLEFrameTime; // Number of microseconds for each segment - put this in a setting?
             int max_steps = (int)Math.Floor(total_micros / each_micros);
             double st, ct;
             int xc, yc;
@@ -333,7 +372,7 @@ namespace Diable.Views
             if (w > h) h = w; else w = h; // Choose the maximum (maintains aspect ratio)!
             for (int step = 0; step < max_steps; step++)
             {
-                byte[][] step_frame = new byte[16][];
+                byte[][] step_frame = new byte[_DiaBLELightCount * 2][];
                 // Diabolo spins clockwise only, so no point in trying to do this in any direction OTHER than clockwise.
                 // Which means we're going in steps from 0 to 29, and the angle is -2.0 * pi * step / 30.0
                 // bytes array is an array of pixels, going from inside to outside, alternating left stick, right, left, right, etc.
@@ -345,9 +384,9 @@ namespace Diable.Views
                 st = Math.Sin(theta);
                 ct = Math.Cos(theta);
 
-                double radius = 16.0; // I tried 17, so as not to reach the edges, but I think 16 may be better.
+                double radius = _DiaBLELightCount * 2.0; // I tried 17, so as not to reach the edges, but I think 16 may be better.
 
-                for (int hop = 0; hop < 16; hop++)
+                for (int hop = 0; hop < _DiaBLELightCount * 2; hop++)
                 {
                     if (hop % 2 == 0)
                     {
@@ -381,23 +420,23 @@ namespace Diable.Views
             await SendBLECmd(f);
         }
 
-        private async void TestButton_Clicked(object sender, EventArgs e)
-        {
-            // Simulate sending as much data as a 30 frame animation.
-            // That's (16*3+4)*30+2+1 = 1563 bytes
-            // Not yet implemented in the firmware, so this is disabled in the app.
-            // This was written to allow testing if the async change didn't fix the problem.
-            int tlen = 1560;
-            byte[] outstr = new byte[tlen + 3];
-            outstr[0] = (byte)'T';
-            outstr[1] = (byte)(tlen & 0xff);
-            outstr[2] = (byte)((tlen >> 8) & 0xff);
-            for (int i = 0; i < tlen; i++)
-            {
-                outstr[i + 3] = (byte)(i % 0xff);
-            }
-            await SendBLECmd(outstr);
-        }
+        //private async void TestButton_Clicked(object sender, EventArgs e)
+        //{
+        //    // Simulate sending as much data as a 30 frame animation.
+        //    // That's (16*3+4)*30+2+1 = 1563 bytes
+        //    // Not yet implemented in the firmware, so this is disabled in the app.
+        //    // This was written to allow testing if the async change didn't fix the problem.
+        //    int tlen = 1560;
+        //    byte[] outstr = new byte[tlen + 3];
+        //    outstr[0] = (byte)'T';
+        //    outstr[1] = (byte)(tlen & 0xff);
+        //    outstr[2] = (byte)((tlen >> 8) & 0xff);
+        //    for (int i = 0; i < tlen; i++)
+        //    {
+        //        outstr[i + 3] = (byte)(i % 0xff);
+        //    }
+        //    await SendBLECmd(outstr);
+        //}
 
         private void OnBLEReceive(byte[] bytes)
         {
@@ -409,8 +448,30 @@ namespace Diable.Views
                 case 'O':
                     // Should be "OK\r\n"
                     break;
-                case 'L':
-                    // Should be "LDiaBLE v2.10:0506W for version 2.10, pin0=5, pin1=6 (decimal), wing-forme
+                case 'V':
+                    // Should be "VDiaBLE v2.10:L0506W:Swhscz for version 2.10, pin0=5, pin1=6 (decimal), wing-forme
+                    // (Maybe later, it'll have more values)
+                    String input = Encoding.ASCII.GetString(bytes);
+                    Regex re = new Regex("^VDiaBLE v([0-9.]+):L([0-9][0-9])([0-9][0-9])(.)(:S([0-9]+),...)?");
+                    var matches = re.Match(input);
+                    string version = matches.Groups[1].Value;
+                    _DiaBLEVersion = version;
+                    string pin0 = matches.Groups[2].Value;
+                    Byte.TryParse(pin0, out _DiaBLEPin0);
+                    string pin1 = matches.Groups[3].Value;
+                    Byte.TryParse(pin1, out _DiaBLEPin1);
+                    string fold = matches.Groups[4].Value;
+                    _DiaBLEFold = fold[0];
+                    if (matches.Groups.Count > 5)
+                    {
+                        if (matches.Groups[5].Value.StartsWith(":S"))
+                        {
+                            _DiaBLELightCount = (byte)int.Parse(matches.Groups[6].Value);
+                            FrameCommands.SetLightCount(_DiaBLELightCount);
+                        }
+                    }
+                    // TODO: Add number of LEDs, number of sticks (x * y)
+                    // (You never know, we could get more lines by simply doing three sticks or four!)
                     break;
             }
         }
@@ -422,10 +483,81 @@ namespace Diable.Views
             settingsPage.DiaBLEVersion = "2.1.3";
             settingsPage.Pin0 = "7";
             settingsPage.Pin1 = "8";
-            // TODO: These are all dumb settings, so instead, we should put up the values we got from the DiaBLE unit itself.
+            // These are all incorrect default settings, so instead, we should put up the values we got from the DiaBLE unit itself.
+            settingsPage.DiaBLEVersion = _DiaBLEVersion;
+            settingsPage.Pin0 = _DiaBLEPin0.ToString();
+            settingsPage.Pin1 = _DiaBLEPin1.ToString();
+            settingsPage.FoldedSwitch = _DiaBLEFold == 'F'; // Otherwise 'W'.
+            settingsPage.DiaBLEName = _DiaBLEName;
+            settingsPage.FrameTime = _DiaBLEFrameTime.ToString();
+            settingsPage.LightCount = _DiaBLELightCount.ToString();
 
             await Navigation.PushAsync(settingsPage);
 
+        }
+
+        private async void Default1_Clicked(object sender, EventArgs e)
+        {
+            // TODO: Adjust this for number of LEDs.
+            byte[][][] def1frames =
+            {
+                new byte[][] { green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color },
+                new byte[][] { black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color },
+                new byte[][] { black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color },
+                new byte[][] { black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color },
+                new byte[][] {   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color },
+                new byte[][] { black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color },
+                new byte[][] { black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color },
+                new byte[][] { black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color },
+                new byte[][] {  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color },
+                new byte[][] { black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color },
+                new byte[][] { black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color },
+                new byte[][] { black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color },
+
+            };
+            FrameCommands f = new FrameCommands();
+            foreach (var theFrame in def1frames)
+                f.AddFrame(500, theFrame);
+
+            // a colourful spiral design. Each leg of the spiral is a different colour.
+            await SendBLECmd(f);
+        }
+
+        private async void Default2_Clicked(object sender, EventArgs e)
+        {
+            byte[][][] def2frames = {
+                new byte[][] {   red_color,   red_color,   red_color,   red_color,   red_color,   red_color,   red_color,   red_color,  blue_color,  blue_color,  blue_color,  blue_color,  blue_color,  blue_color,  blue_color,  blue_color },
+                new byte[][] { black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color },
+                new byte[][] { green_color, green_color, green_color, green_color, green_color, green_color, green_color, green_color,   red_color,   red_color,   red_color,   red_color,   red_color,   red_color,   red_color,   red_color },
+                new byte[][] { black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color },
+                new byte[][] {  blue_color,  blue_color,  blue_color,  blue_color,  blue_color,  blue_color,  blue_color,  blue_color, green_color, green_color, green_color, green_color, green_color, green_color, green_color, green_color },
+                new byte[][] { black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color },
+            };
+            FrameCommands f = new FrameCommands();
+            foreach (var theFrame in def2frames)
+                f.AddFrame(500, theFrame);
+            await SendBLECmd(f);
+        }
+
+        private async void CycleButton_Clicked(object sender, EventArgs e)
+        {
+            // Cycle through the colours - also known as "Rainbow" or "Spectrum".
+            int cycle_speed = (int)CycleSpeed.Value;
+            int cycle_step = (int)CycleStep.Value;
+            await SendBLECmd(new byte[] { (byte)'Y', (byte)cycle_speed, (byte)((cycle_step >> 8) & 0xff), (byte)(cycle_step & 0xff) }); // Set colour cycle!
+        }
+
+        private async void SparkleButton_Clicked(object sender, EventArgs e)
+        {
+            int sparkle_chance = (int)SparkleChance.Value;
+            int sparkle_fred = (int)SparkleFRed.Value;
+            int sparkle_fgreen = (int)SparkleFGreen.Value;
+            int sparkle_fblue = (int)SparkleFBlue.Value;
+            int sparkle_bred = (int)SparkleBRed.Value;
+            int sparkle_bgreen = (int)SparkleBGreen.Value;
+            int sparkle_bblue = (int)SparkleBBlue.Value;
+            await SendBLECmd(new byte[] { (byte)'X', (byte)sparkle_chance, (byte)sparkle_fred, (byte) sparkle_fgreen, (byte)sparkle_fblue,
+            (byte)sparkle_bred, (byte)sparkle_bgreen, (byte)sparkle_bblue});
         }
     }
 }
