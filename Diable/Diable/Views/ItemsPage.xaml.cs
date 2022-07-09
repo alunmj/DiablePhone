@@ -11,10 +11,7 @@ using Diable.Models;
 using Diable.Views;
 using Diable.ViewModels;
 using System.Threading;
-using nexus.protocols.ble;
-using nexus.protocols.ble.scan;
 using System.Diagnostics;
-using nexus.protocols.ble.scan.advertisement;
 
 namespace Diable.Views
 {
@@ -24,7 +21,7 @@ namespace Diable.Views
     public partial class ItemsPage : ContentPage
     {
         ItemsViewModel viewModel;
-        Dictionary<string, IBlePeripheral> peripheralMap = new Dictionary<string, IBlePeripheral>();
+        Dictionary<string, object /*-B IBlePeripheral*/> peripheralMap = new Dictionary<string, object /*-B IBlePeripheral*/>();
 
         public ItemsPage()
         {
@@ -38,7 +35,7 @@ namespace Diable.Views
             // We clicked on a device. Connect to it. Subpage: Make sure it has the services we need, connect to the serial TX/RX service
             var layout = (BindableObject)sender;
             var item = (Item)layout.BindingContext;
-            await Navigation.PushAsync(new ItemDetailPage(new ItemDetailViewModel(item), peripheralMap[item.Id]));
+            await Navigation.PushAsync(new ItemDetailPage(new ItemDetailViewModel(item)/*-B, peripheralMap[item.Id]*/));
         }
 
         async void AddItem_Clicked(object sender, EventArgs e)
@@ -48,12 +45,13 @@ namespace Diable.Views
 
         private async Task RefreshBTLEDevices()
         {
-            var ble = ((App)(App.Current)).myble;
             var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+/*-B            var ble = ((App)(App.Current)).myble;
             if (ble != null && ble.AdapterCanBeEnabled && ble.CurrentState.IsDisabledOrDisabling())
             {
                 await ble.EnableAdapter();
             }
+*/
             // TODO: Clear all items.
             viewModel.Items.Clear();
             peripheralMap.Clear();
@@ -63,6 +61,7 @@ namespace Diable.Views
             peripheralMap[fakeId] = null;
 #endif // DEBUG
             // Connecting to Device Name "Adafruit Bluefruit LE", service = 6e400001-b5a3-f393-e0a9-e50e24dcca9e
+/*-B
             if (ble != null)
             {
                 await ble.ScanForBroadcasts(
@@ -94,6 +93,7 @@ namespace Diable.Views
                      },
                      cts.Token);
             }
+*/
 
         }
 

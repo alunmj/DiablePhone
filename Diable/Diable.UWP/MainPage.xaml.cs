@@ -12,7 +12,6 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
-using nexus.protocols.ble;
 
 namespace Diable.UWP
 {
@@ -22,7 +21,7 @@ namespace Diable.UWP
         {
             this.InitializeComponent();
 
-            LoadApplication(new Diable.App(BluetoothLowEnergyAdapter.ObtainDefaultAdapter()));
+            LoadApplication(new Diable.App(/*-B BluetoothLowEnergyAdapter.ObtainDefaultAdapter()*/));
         }
     }
 }

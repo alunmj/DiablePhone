@@ -3,21 +3,20 @@ using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 using Diable.Services;
 using Diable.Views;
-using nexus.protocols.ble;
 
 namespace Diable
 {
     public partial class App : Application
     {
-        public IBluetoothLowEnergyAdapter myble;
+        //-B public IBluetoothLowEnergyAdapter myble;
 
-        public App(IBluetoothLowEnergyAdapter ble)
+        public App(/*-B IBluetoothLowEnergyAdapter ble*/)
         {
             InitializeComponent();
 
             DependencyService.Register<MockDataStore>();
             MainPage = new MainPage();
-            myble = ble;
+            //-B myble = ble;
         }
 
         protected override void OnStart()

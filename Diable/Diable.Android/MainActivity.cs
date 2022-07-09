@@ -6,7 +6,6 @@ using Android.Runtime;
 using Android.Views;
 using Android.Widget;
 using Android.OS;
-using nexus.protocols.ble;
 using Android.Bluetooth;
 using Android.Support.V4.App;
 using Android;
@@ -28,16 +27,16 @@ namespace Diable.Droid
             Xamarin.Essentials.Platform.Init(this, savedInstanceState);
             global::Xamarin.Forms.Forms.Init(this, savedInstanceState);
             //BluetoothLowEnergyAdapter.Init(this);
-            IBluetoothLowEnergyAdapter bluetooth = null;
+            //-BIBluetoothLowEnergyAdapter bluetooth = null;
             // I need fine location support to be able to list nearby BLE endpoints.
             ActivityCompat.RequestPermissions(this, new string[] { Manifest.Permission.AccessFineLocation }, 1);
             // If we're running in an emulator, no bluetooth.
             if (BluetoothAdapter.DefaultAdapter != null)
             {
-                bluetooth = BluetoothLowEnergyAdapter.ObtainDefaultAdapter(ApplicationContext);
+                //-B bluetooth = BluetoothLowEnergyAdapter.ObtainDefaultAdapter(ApplicationContext);
             }
             Window.AddFlags(WindowManagerFlags.KeepScreenOn);
-            LoadApplication(new App(bluetooth));
+            LoadApplication(new App(/*-B bluetooth*/));
         }
         public override void OnRequestPermissionsResult(int requestCode, string[] permissions, [GeneratedEnum] Android.Content.PM.Permission[] grantResults)
         {
