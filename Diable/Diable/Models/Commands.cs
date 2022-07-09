@@ -57,6 +57,7 @@ namespace Diable.Models
                     return;
                 }
                 frame = new byte[nLights][];
+                numLights = nLights;
                 for (int i = 0; i < numLights; i++)
                 {
                     frame[i] = new byte[3];
@@ -81,8 +82,8 @@ namespace Diable.Models
         readonly List<Frames> frames = new List<Frames>();
         public FrameCommands() : base('F') { }
         static private int numLights;
-        static public void SetLightCount(int nLights) { numLights = nLights; }
-        static public int GetLightCount() { return numLights; }
+        static public void SetLightCount(int nLights) { numLights = nLights*2; }
+        static public int GetLightCount() { return numLights/2; }
         public void AddFrame(Frames _frame)
         {
             Debug.Assert(_frame.frame.Length == numLights);
@@ -124,7 +125,7 @@ namespace Diable.Models
                 ms.Write(microsFrame, 0, 4);
                 foreach (var y in x.frame)
                 {
-                    ms.Write(y, 0, y.Length);
+                    ms.Write(y, 0, numLights);
                 }
             }
         }

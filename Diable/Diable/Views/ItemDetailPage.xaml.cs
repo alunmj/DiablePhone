@@ -46,6 +46,7 @@ namespace Diable.Views
         public ItemDetailPage(ItemDetailViewModel viewModel, IBlePeripheral peripheral)
         {
             InitializeComponent();
+            FrameCommands.SetLightCount(_DiaBLELightCount);
 
             BindingContext = this.viewModel = viewModel;
             // Text is Device ID, Id is address.
@@ -501,18 +502,18 @@ namespace Diable.Views
             // TODO: Adjust this for number of LEDs.
             byte[][][] def1frames =
             {
-                new byte[][] { green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color },
-                new byte[][] { black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color },
-                new byte[][] { black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color },
-                new byte[][] { black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color },
-                new byte[][] {   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color },
-                new byte[][] { black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color },
-                new byte[][] { black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color },
-                new byte[][] { black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color },
-                new byte[][] {  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color },
-                new byte[][] { black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color },
-                new byte[][] { black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color },
-                new byte[][] { black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color },
+                new byte[][] { green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color },
+                new byte[][] { black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color },
+                new byte[][] { black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color },
+                new byte[][] { black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color },
+                new byte[][] {   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color },
+                new byte[][] { black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color },
+                new byte[][] { black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color },
+                new byte[][] { black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color },
+                new byte[][] {  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color },
+                new byte[][] { black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color},
+                new byte[][] { black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color },
+                new byte[][] { black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color,  black_color },
 
             };
             FrameCommands f = new FrameCommands();
