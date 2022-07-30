@@ -124,6 +124,7 @@
                 </StackLayout>
             </ScrollView>
             <StackLayout Orientation="Horizontal">
+                <Button Text="Gyro" x:Name="Gyro" Clicked="Gyro_Clicked"/>
                 <Button Text="Default 1" x:Name="Default1" Clicked="Default1_Clicked" />
                 <Button Text="Default 2" x:Name="Default2" Clicked="Default2_Clicked" />
             </StackLayout>

@@ -84,15 +84,29 @@ namespace Diable.Views
             // Connect to Bluetooth if we can, and need to...
             if (myper != null && (gattServer == null))
             {
+                Debug.WriteLine($"ConnectToDevice will be called.");
                 connection = await ble.ConnectToDevice(myper, new TimeSpan(0, 0, 30));
+                // connection is struct; cannot be null.
+                Debug.WriteLine($"ConnectToDevice called, success is {connection.IsSuccessful()}");
                 if (connection.IsSuccessful())
                 {
                     // Don't forget to split into max MTU bytes per send.
                     gattServer = connection.GattServer;
-                    _ = gattServer.NotifyCharacteristicValue(kUartSvcId, kUartRxCharId, OnBLEReceive);
+                    if (gattServer == null)
+                    {
+                        Debug.WriteLine($"GattServer is null after connection was allegedly successful");
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"Set notify operation attempting");
+                        _ = gattServer.NotifyCharacteristicValue(kUartSvcId, kUartRxCharId, OnBLEReceive);
+                        Debug.WriteLine($"Set notify operation completed");
 
-                    await SendBLECmd(new byte[] { (byte)'B', (byte)brightness }); // Set brightness!
-                    await SendBLECmd("V"); // Get version info!
+                        await SendBLECmd(new byte[] { (byte)'B', (byte)brightness }); // Set brightness!
+                        Debug.WriteLine($"Sent B command");
+                        await SendBLECmd("V"); // Get version info!
+                        Debug.WriteLine($"Sent V command");
+                    }
                 }
             }
             if (ImageButtonStack.Children.Count == 0)
@@ -223,7 +237,7 @@ namespace Diable.Views
             Debug.WriteLine($"Time: {(DateTime.Now - firstCall).TotalSeconds}");
             Debug.WriteLine($"Begin:\n{Convert.ToBase64String(commandStream.ToArray())}\n:End");
             commandStream.Position = 0;
-            if (gattServer != null)
+            if (gattServer != null && gattServer.State == ConnectionState.Connected)
             {
                 for (int i = 0; i < commandStream.Length; i += kUartTxMaxBytes)
                 {
@@ -239,6 +253,11 @@ namespace Diable.Views
                         Debug.WriteLine("That's not good - out is not the same as in.");
                     }
                 }
+                Debug.WriteLine("Sent all the command I was given");
+            }
+            else
+            {
+                Debug.WriteLine("Gattserver is already null in SendBLECmd");
             }
             commandStream.SetLength(0);
             commandStream.Position = 0;
@@ -499,23 +518,27 @@ namespace Diable.Views
 
         private async void Default1_Clicked(object sender, EventArgs e)
         {
-            // TODO: Adjust this for number of LEDs.
-            byte[][][] def1frames =
+            byte[][][] def1frames = new byte[12][][];
+            for (int i = 0; i < 12; i++)
             {
-                new byte[][] { green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color },
-                new byte[][] { black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color },
-                new byte[][] { black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color },
-                new byte[][] { black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color },
-                new byte[][] {   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color },
-                new byte[][] { black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color },
-                new byte[][] { black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color },
-                new byte[][] { black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color },
-                new byte[][] {  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color },
-                new byte[][] { black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color},
-                new byte[][] { black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color },
-                new byte[][] { black_color, green_color, black_color, black_color, black_color,   red_color, black_color, black_color, black_color,  blue_color, black_color, black_color, black_color, green_color, black_color, black_color, black_color,   red_color, black_color,  black_color },
+                def1frames[i] = new byte[_DiaBLELightCount * 2][];
+                for (int j = 0; j < _DiaBLELightCount * 2; j++)
+                {
+                    def1frames[i][j] = black_color;
+                }
+                // green, red, blue, green, red, blue at every fourth slot, starting at 0 - i
+                int dc2 = _DiaBLELightCount * 2;
 
-            };
+                for (int j=0;j<dc2 * 2;j+=4)
+                {
+                    int offset = j - i;
+                    byte[] color = new byte[][]{ green_color, red_color, blue_color }[(j/4)%3];
+                    if (offset > 0 && offset < dc2)
+                    {
+                        def1frames[i][offset] = color;
+                    }
+                }
+            }
             FrameCommands f = new FrameCommands();
             foreach (var theFrame in def1frames)
                 f.AddFrame(500, theFrame);
@@ -526,14 +549,32 @@ namespace Diable.Views
 
         private async void Default2_Clicked(object sender, EventArgs e)
         {
-            byte[][][] def2frames = {
-                new byte[][] {   red_color,   red_color,   red_color,   red_color,   red_color,   red_color,   red_color,   red_color,  blue_color,  blue_color,  blue_color,  blue_color,  blue_color,  blue_color,  blue_color,  blue_color },
-                new byte[][] { black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color },
-                new byte[][] { green_color, green_color, green_color, green_color, green_color, green_color, green_color, green_color,   red_color,   red_color,   red_color,   red_color,   red_color,   red_color,   red_color,   red_color },
-                new byte[][] { black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color },
-                new byte[][] {  blue_color,  blue_color,  blue_color,  blue_color,  blue_color,  blue_color,  blue_color,  blue_color, green_color, green_color, green_color, green_color, green_color, green_color, green_color, green_color },
-                new byte[][] { black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color, black_color },
-            };
+            byte[][][] def2frames = new byte[6][][];
+            for (int i = 0; i < 6; i++)
+            {
+                def2frames[i] = new byte[_DiaBLELightCount * 2][];
+                if (i % 2 == 1)
+                {
+                    for (int j = 0; j < _DiaBLELightCount * 2; j++)
+                    {
+                        def2frames[i][j] = black_color;
+                    }
+                }
+                else
+                {
+                    byte[][] tmp = new byte[][] { red_color, green_color, blue_color };
+                    byte[] tmpColor = tmp[i / 2];
+                    for (int j = 0; j < _DiaBLELightCount; j++)
+                    {
+                        def2frames[i][j] = tmpColor;
+                    }
+                    tmpColor = tmp[(i / 2 + 2) % 3];
+                    for (int j = _DiaBLELightCount; j < _DiaBLELightCount * 2; j++)
+                    {
+                        def2frames[i][j] = tmpColor;
+                    }
+                }
+            }
             FrameCommands f = new FrameCommands();
             foreach (var theFrame in def2frames)
                 f.AddFrame(500, theFrame);
@@ -559,6 +600,12 @@ namespace Diable.Views
             int sparkle_bblue = (int)SparkleBBlue.Value;
             await SendBLECmd(new byte[] { (byte)'X', (byte)sparkle_chance, (byte)sparkle_fred, (byte) sparkle_fgreen, (byte)sparkle_fblue,
             (byte)sparkle_bred, (byte)sparkle_bgreen, (byte)sparkle_bblue});
+        }
+
+        private async void Gyro_Clicked(object sender, EventArgs e)
+        {
+            // Experimental gyro mode.
+            await SendBLECmd(new byte[] { (byte)'G' });
         }
     }
 }

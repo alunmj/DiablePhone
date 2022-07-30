@@ -125,7 +125,7 @@ namespace Diable.Models
                 ms.Write(microsFrame, 0, 4);
                 foreach (var y in x.frame)
                 {
-                    ms.Write(y, 0, numLights);
+                    ms.Write(y, 0, y.Length);
                 }
             }
         }
