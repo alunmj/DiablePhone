@@ -82,14 +82,14 @@ namespace Diable.Views
         {
             base.OnAppearing();
             // Connect to Bluetooth if we can, and need to...
-            if (myper != null)
+            if (myper != null && !myper.IsConnected())
             {
+                myper.WhenConnectedNotify(kUartSvcId.ToString(), kUartRxCharId.ToString()).SubscribeAsync(OnBLEReceive);
                 await myper.ConnectAsync(new ConnectionConfig { AutoConnect = false }, timeout: TimeSpan.FromSeconds(30));
                 myper.TryRequestMtu(kUartTxMaxBytes);
                 if (myper.IsConnected())
                 {
                     // Don't forget to split into max MTU bytes per send.
-                    myper.Notify(kUartSvcId.ToString(), kUartRxCharId.ToString()).SubscribeAsync(OnBLEReceive);
 
                     await SendBLECmd(new byte[] { (byte)'B', (byte)brightness }); // Set brightness!
                     await SendBLECmd("V"); // Get version info!
@@ -271,7 +271,10 @@ namespace Diable.Views
         protected async override void OnDisappearing()
         {
             base.OnDisappearing();
-            myper.CancelConnection();
+            if (myper.IsConnected() && settingsPage == null)
+            {
+                myper.CancelConnection();
+            }
         }
 
         private void Brightness_ValueChanged(object sender, ValueChangedEventArgs e)
