@@ -438,7 +438,7 @@ namespace Diable.Views
 
 
 
-        private Task OnBLEReceive(GattCharacteristicResult arg)
+        private async Task OnBLEReceive(GattCharacteristicResult arg)
         {
             byte[] bytes = arg.Data;
             // If this crashes, maybe it needs Device.BeginInvokeOnMainThread(Action)
