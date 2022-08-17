@@ -15,6 +15,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using SkiaSharp;
 using System.Text.RegularExpressions;
+using Shiny.BluetoothLE;
+using Shiny;
 
 namespace Diable.Views
 {
@@ -24,10 +26,10 @@ namespace Diable.Views
     public partial class ItemDetailPage : ContentPage
     {
         ItemDetailViewModel viewModel;
-//-B        private IBlePeripheral myper;
+        private IPeripheral myper;
 //-B        private BlePeripheralConnectionRequest connection;
 //-B        private IBleGattServerConnection gattServer;
-//-B        private readonly IBluetoothLowEnergyAdapter ble;
+        private readonly IBleManager ble;
         private int brightness = 100;
         private SettingsPage settingsPage = null;
 
@@ -41,19 +43,19 @@ namespace Diable.Views
         // TODO: Save the frame time somewhere, so personal preferences are kept.
         private long _DiaBLEFrameTime = 500; // 500 seems good, but we should be able to play with it!
 
-        public ItemDetailPage(ItemDetailViewModel viewModel /*-B, IBlePeripheral peripheral*/)
+        public ItemDetailPage(ItemDetailViewModel viewModel , IPeripheral peripheral)
         {
             InitializeComponent();
             FrameCommands.SetLightCount(_DiaBLELightCount);
 
             BindingContext = this.viewModel = viewModel;
             // Text is Device ID, Id is address.
-//-B            ble = ((App)(App.Current)).myble;
-//-B            myper = peripheral;
+            ble = ShinyHost.Resolve<IBleManager>();
+            myper = peripheral;
 
-            if (/*-Bmyper != null && myper.Advertisement != null*/ false)
+            if (myper != null && myper.Name != null)
             {
-//-B                _DiaBLEName = myper.Advertisement.DeviceName;
+                _DiaBLEName = myper.Name;
             }
             else
             {
@@ -80,20 +82,19 @@ namespace Diable.Views
         {
             base.OnAppearing();
             // Connect to Bluetooth if we can, and need to...
-/*-B            if (myper != null && (gattServer == null))
+            if (myper != null)
             {
-                connection = await ble.ConnectToDevice(myper, new TimeSpan(0, 0, 30));
-                if (connection.IsSuccessful())
+                await myper.ConnectAsync(new ConnectionConfig { AutoConnect = false }, timeout: TimeSpan.FromSeconds(30));
+                myper.TryRequestMtu(kUartTxMaxBytes);
+                if (myper.IsConnected())
                 {
                     // Don't forget to split into max MTU bytes per send.
-                    gattServer = connection.GattServer;
-                    _ = gattServer.NotifyCharacteristicValue(kUartSvcId, kUartRxCharId, OnBLEReceive);
+                    myper.Notify(kUartSvcId.ToString(), kUartRxCharId.ToString()).SubscribeAsync(OnBLEReceive);
 
                     await SendBLECmd(new byte[] { (byte)'B', (byte)brightness }); // Set brightness!
                     await SendBLECmd("V"); // Get version info!
                 }
             }
-*/
             if (ImageButtonStack.Children.Count == 0)
             {
                 var assembly = typeof(App).GetTypeInfo().Assembly;
@@ -222,7 +223,7 @@ namespace Diable.Views
             Debug.WriteLine($"Time: {(DateTime.Now - firstCall).TotalSeconds}");
             Debug.WriteLine($"Begin:\n{Convert.ToBase64String(commandStream.ToArray())}\n:End");
             commandStream.Position = 0;
-/*-B            if (gattServer != null)
+            if (myper != null && myper.IsConnected())
             {
                 for (int i = 0; i < commandStream.Length; i += kUartTxMaxBytes)
                 {
@@ -231,15 +232,14 @@ namespace Diable.Views
                         toRead = (int)(commandStream.Length - i);
                     byte[] into = new byte[toRead];
                     int readthem = commandStream.Read(into, 0, toRead);
-                    byte[] outof = await gattServer.WriteCharacteristicValue(kUartSvcId, kUartTxCharId, into);
-                    bool outisin = outof.SequenceEqual(into);
+                    var outof = await myper.WriteCharacteristicAsync(kUartSvcId.ToString(), kUartTxCharId.ToString(), into);
+                    bool outisin = outof.Data.SequenceEqual(into);
                     if (!outisin)
                     {
                         Debug.WriteLine("That's not good - out is not the same as in.");
                     }
                 }
             }
-*/
             commandStream.SetLength(0);
             commandStream.Position = 0;
         }
@@ -271,12 +271,7 @@ namespace Diable.Views
         protected async override void OnDisappearing()
         {
             base.OnDisappearing();
-/*-B            if (gattServer != null && settingsPage == null) // Don't disconnect if we're going to settings page.
-            {
-                await gattServer.Disconnect();
-                gattServer = null;
-            }
-*/
+            myper.CancelConnection();
         }
 
         private void Brightness_ValueChanged(object sender, ValueChangedEventArgs e)
@@ -440,8 +435,12 @@ namespace Diable.Views
         //    await SendBLECmd(outstr);
         //}
 
-        private void OnBLEReceive(byte[] bytes)
+
+
+
+        private Task OnBLEReceive(GattCharacteristicResult arg)
         {
+            byte[] bytes = arg.Data;
             // If this crashes, maybe it needs Device.BeginInvokeOnMainThread(Action)
             Debug.WriteLine($"We got some bytes of {bytes.Count()} length.");
             Debug.WriteLine($"{Encoding.ASCII.GetString(bytes)}");

@@ -4,7 +4,11 @@ using System.Linq;
 
 using Foundation;
 using UIKit;
-
+// NOTE THE USE OF THE FULL TYPE NAME INCLUDING NAMESPACE
+[assembly: Shiny.ShinyApplication(
+    ShinyStartupTypeName = "Diable.DiableShinyStartup",
+    XamarinFormsAppTypeName = "Diable.App"
+)]
 namespace Diable.iOS
 {
     public class Application

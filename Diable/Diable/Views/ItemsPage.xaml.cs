@@ -12,6 +12,8 @@ using Diable.Views;
 using Diable.ViewModels;
 using System.Threading;
 using System.Diagnostics;
+using Shiny;
+using Shiny.BluetoothLE;
 
 namespace Diable.Views
 {
@@ -21,7 +23,7 @@ namespace Diable.Views
     public partial class ItemsPage : ContentPage
     {
         ItemsViewModel viewModel;
-        Dictionary<string, object /*-B IBlePeripheral*/> peripheralMap = new Dictionary<string, object /*-B IBlePeripheral*/>();
+        Dictionary<string, IPeripheral> peripheralMap = new Dictionary<string, IPeripheral>();
 
         public ItemsPage()
         {
@@ -35,7 +37,7 @@ namespace Diable.Views
             // We clicked on a device. Connect to it. Subpage: Make sure it has the services we need, connect to the serial TX/RX service
             var layout = (BindableObject)sender;
             var item = (Item)layout.BindingContext;
-            await Navigation.PushAsync(new ItemDetailPage(new ItemDetailViewModel(item)/*-B, peripheralMap[item.Id]*/));
+            await Navigation.PushAsync(new ItemDetailPage(new ItemDetailViewModel(item), peripheralMap[item.Id]));
         }
 
         async void AddItem_Clicked(object sender, EventArgs e)
@@ -45,13 +47,11 @@ namespace Diable.Views
 
         private async Task RefreshBTLEDevices()
         {
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-/*-B            var ble = ((App)(App.Current)).myble;
-            if (ble != null && ble.AdapterCanBeEnabled && ble.CurrentState.IsDisabledOrDisabling())
+            var bleManager = ShinyHost.Resolve<IBleManager>();
+            if (bleManager != null && bleManager.CanControlAdapterState())
             {
-                await ble.EnableAdapter();
+                bleManager.TrySetAdapterState(true);
             }
-*/
             // TODO: Clear all items.
             viewModel.Items.Clear();
             peripheralMap.Clear();
@@ -61,40 +61,48 @@ namespace Diable.Views
             peripheralMap[fakeId] = null;
 #endif // DEBUG
             // Connecting to Device Name "Adafruit Bluefruit LE", service = 6e400001-b5a3-f393-e0a9-e50e24dcca9e
-/*-B
-            if (ble != null)
+            // Scan for BLE devices
+            if (!bleManager.IsScanning)
             {
-                await ble.ScanForBroadcasts(
-                    new ScanSettings()
-                    {
-                        Filter = new ScanFilter() { AdvertisedServiceIsInList = new List<Guid> { new Guid("6e400001-b5a3-f393-e0a9-e50e24dcca9e") } },
-                        Mode = ScanMode.LowPower,
-                        IgnoreRepeatBroadcasts = false
-                    },
-                     peripheral =>
-                     {
-                         var adv = peripheral.Advertisement;
-                         Debug.WriteLine(adv.DeviceName ?? "(null device name)");
-                         Debug.WriteLine(String.Join(", ", adv.Services.Select(x => x.ToString())));
-                         Debug.WriteLine(adv.ManufacturerSpecificData.FirstOrDefault().CompanyName());
-                         Debug.WriteLine(adv.ServiceData);
-                         string textId = BitConverter.ToString(peripheral.Address);
-                         if (!peripheralMap.ContainsKey(textId))
-                         {
-                             viewModel.Items.Add(new Item()
-                             {
-                                 Description = adv.DeviceName,
-                                 Text = peripheral.DeviceId.ToString(),
-                                 Id = textId
-                             });
-                             peripheralMap[textId] = peripheral;
-                         }
-                         cts.Cancel(); // Found what we needed? Really?
-                     },
-                     cts.Token);
-            }
-*/
+                var scanner = bleManager.Scan(new ScanConfig { ServiceUuids = new List<string>() { "6e400001-b5a3-f393-e0a9-e50e24dcca9e" } })
+                    .Subscribe(scanResult => {
+                        IAdvertisementData adv = scanResult.AdvertisementData;
+                        /*
+                         * adv.IsConnectable = true
+                         * adv.LocalName = "RayTac"
+                         * adv.ManufacturerData = null
+                         * adv.ServiceData = Shiny.BluetoothLE.AdvertisementServiceData[0]
+                         * adv.ServiceUuids = { "6e400001-b5a3-f393-e0a9-e50e24dcca9e" }
+                         * adv.TxPower = 0
+                         * 
+                         */
+                        /*
+                         * scanResult.Rssi = -83
+                         */
+                        IPeripheral per = scanResult.Peripheral;
+                        /*
+                         * per.Name = "RayTac"
+                         * per.Uuid = "00000000-0000-0000-0000-d8d4f9fcc04b"
+                         * per.MtuSize = 20
+                         * per.Native = Android.Bluetooth.BluetoothDevice
+                         * per.PairingStatus = Shiny.BluetoothLE.PairingState.NotPaired
+                         * per.Status = Shiny.BluetoothLE.ConnectionState.Disconnected
+                         */
+                        string textId = per.Uuid;
+                        if (!peripheralMap.ContainsKey(textId))
+                        {
+                            viewModel.Items.Add(new Item()
+                            {
+                                Description = adv.LocalName, // Could also just be per.Name?
+                                Text = per.Uuid,
+                                Id = textId
+                            });
+                            peripheralMap[textId] = per;
+                        }
 
+                    }
+                );
+            }
         }
 
         protected async override void OnAppearing()
