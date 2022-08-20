@@ -19,3 +19,9 @@ If you want to build one of your own for a DIY project, please do - it's literal
 usually to data pins 5 & 6 (and, naturally, to the GND and 3V lines).
 
 ![Here's an early picture of the device on a diabolo](https://user-images.githubusercontent.com/22458124/185769219-7a18504d-cba7-4502-857a-a6f3e8b54498.jpg)Here's an early picture of the device on a diabolo
+
+![WIN_20220820_16_29_47_Pro](https://user-images.githubusercontent.com/22458124/185769394-cc880876-6aef-49c8-bc7b-7b56a383c5a3.jpg)A more recent picture, same diabolo, but this has ten smaller lights on each stick instead of eight bigger ones.
+
+With ten smaller lights, you can do pictures.
+
+But cameras don't do it justice, you have to see it in person.
